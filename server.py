@@ -1,31 +1,48 @@
 from socket import *
 
 def createServer():
+    # Create a socket and set options to reuse the address
     serversocket = socket(AF_INET, SOCK_STREAM)
-    try :
-        serversocket.bind(('localhost',9000))
+    serversocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)  # Allow port reuse
+    
+    try:
+        serversocket.bind(('localhost', 9000))  # Bind to localhost on port 9000
         serversocket.listen(5)
-        while(1):
-            (clientsocket, address) = serversocket.accept()
+        print('Server is listening on port 9000...')
 
-            rd = clientsocket.recv(5000).decode()
-            pieces = rd.split("\n")
-            if ( len(pieces) > 0 ) : print(pieces[0])
+        while True:
+            # Accept incoming connections
+            clientsocket, address = serversocket.accept()
+            print(f"Connection established with {address}")
 
-            data = "HTTP/1.1 200 OK\r\n"
-            data += "Content-Type: text/html; charset=utf-8\r\n"
-            data += "\r\n"
-            data += "<html><body>Hello World</body></html>\r\n\r\n"
-            clientsocket.sendall(data.encode())
-            clientsocket.shutdown(SHUT_WR)
+            try:
+                # Receive data from client
+                rd = clientsocket.recv(5000).decode()
+                print(f"Received from client: {rd}")
 
-    except KeyboardInterrupt :
-        print("\nShutting down...\n");
-    except Exception as exc :
-        print("Error:\n");
-        print(exc)
+                # Send a response back to the client
+                data = "HTTP/1.1 200 OK\r\n"
+                data += "Content-Type: text/html; charset=utf-8\r\n"
+                data += "\r\n"
+                data += "<html><body>Hello World</body></html>\r\n\r\n"
+                clientsocket.sendall(data.encode())
+                print("Response sent to client")
 
-    serversocket.close()
+            except Exception as e:
+                print(f"Error during connection handling: {e}")
+            finally:
+                # Close the client connection
+                clientsocket.close()
+                print("Client connection closed")
 
-print('Access http://localhost:9000')
+    except KeyboardInterrupt:
+        print("\nShutting down the server...")
+    except Exception as exc:
+        print(f"Server Error: {exc}")
+    finally:
+        # Always close the server socket
+        serversocket.close()
+        print("Server socket closed.")
+
 createServer()
+
